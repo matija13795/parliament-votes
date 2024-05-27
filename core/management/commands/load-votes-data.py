@@ -1,100 +1,157 @@
-# core/management/commands/load_meetings_data.py
-
 from django.core.management.base import BaseCommand
+from core.models import Meeting, Vote, MEP, MEPVoteMapping
 import requests
-import json
-import pandas as pd
+import time
 
 class Command(BaseCommand):
-    help = "Fetch EP meetings data for a specific year"
+    help = 'Fetch and store meetings and votes data for all available years'
 
-    def add_arguments(self, parser):
-        parser.add_argument('year', type=int, help='Year to fetch the data for')
+    def handle(self, *args, **kwargs):
+        self.fetch_and_store_all_meetings()
 
-    def handle(self, *args, **options):
-        year = options['year']
-        meetings_data = self.fetch_meetings_for_year(year)
-        if meetings_data:
-            self.save_meetings_data(meetings_data, year)
-            all_votes_data = self.fetch_votes_for_all_meetings(meetings_data)
-            if all_votes_data:
-                self.save_all_votes_data(all_votes_data, year)
+    def fetch_and_store_all_meetings(self):
+        # years for which to fetch data 
+        start_year = 2014
+        end_year = 2024
 
-    def fetch_meetings_for_year(self, year):
-        # Construct the URL based on the provided year
-        meetings_url = f"https://data.europarl.europa.eu/api/v2/meetings?year={year}&format=application%2Fld%2Bjson"
-        response = requests.get(meetings_url)
-        
-        if response.status_code == 200:
-            return response.json()
+        for year in range(start_year, end_year + 1):
+            self.fetch_and_store_meetings_for_year(year)
+
+    def fetch_and_store_meetings_for_year(self, year):
+        url = "https://data.europarl.europa.eu/api/v2/meetings"
+        params = {
+            "format": "application/ld+json",
+            "year": year,
+            "offset": 0,
+            "limit": 100 # number of meetings to fetch per request
+        }
+
+        while True:
+            try:
+                response = requests.get(url, params=params)
+                response.raise_for_status()
+                meetings_data = response.json()
+
+                if not meetings_data.get("data"):
+                    break # if no meetings for the year
+
+                meetings = meetings_data["data"]
+                self.process_meetings(meetings)
+
+                params["offset"] += params["limit"]  # Move to the next page
+
+                # Check if there are more pages
+                if params["offset"] >= meetings_data.get("total", 0):
+                    break
+
+            except requests.RequestException as e:
+                self.stderr.write(self.style.ERROR(f'HTTP Request failed for year {year}, offset {params["offset"]}: {e}'))
+                break
+            except Exception as e:
+                self.stderr.write(self.style.ERROR(f'An error occurred: {e}'))
+                break
+
+    def process_meetings(self, meetings):
+        meetings_to_save = []
+        for meeting in meetings:
+            meeting_obj, created = Meeting.objects.update_or_create(
+                activity_id=meeting['activity_id'],
+                defaults={'activity_type': meeting['had_activity_type']}
+            )
+            meetings_to_save.append(meeting_obj)
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'Created meeting {meeting["activity_id"]}'))
+            else:
+                self.stdout.write(self.style.SUCCESS(f'Updated meeting {meeting["activity_id"]}'))
+
+        Meeting.objects.bulk_create(meetings_to_save, ignore_conflicts=True)
+
+        for meeting_obj in meetings_to_save:
+            self.fetch_and_store_votes_for_meeting(meeting_obj.activity_id)
+
+    def fetch_and_store_votes_for_meeting(self, meeting_id):
+        votes_url = f"https://data.europarl.europa.eu/api/v2/meetings/{meeting_id}/vote-results"
+        votes_params = {"format": "application/ld+json"}
+
+        try:
+            votes_response = self.retry_request(votes_url, votes_params)
+            votes_data = votes_response.json()
+
+            for vote_info in votes_data["data"]:
+                for vote in vote_info.get("consists_of", []):
+                    vote_obj = self.save_vote_data(vote)
+                    self.create_mep_vote_mappings(vote, vote_obj)
+
+        except requests.RequestException as e:
+            self.stderr.write(self.style.ERROR(f'Failed to fetch votes data for meeting {meeting_id}: {e}'))
+        except Exception as e:
+            self.stderr.write(self.style.ERROR(f'An error occurred while processing meeting {meeting_id}: {e}'))
+
+
+    # GPT suggested i add this to handle request errors, it basically just retries the request
+    def retry_request(self, url, params, retries=3, delay=5):
+        for i in range(retries):
+            try:
+                response = requests.get(url, params=params)
+                response.raise_for_status()
+                return response
+            except requests.RequestException as e:
+                if i < retries - 1:
+                    self.stderr.write(self.style.WARNING(f'Retry {i+1}/{retries} for {url}: {e}'))
+                    time.sleep(delay)
+                else:
+                    raise
+
+    def save_vote_data(self, vote):
+        self.stdout.write(self.style.SUCCESS(f'Processing vote {vote["id"]}'))
+
+        vote_obj, created = Vote.objects.update_or_create(
+            unique_identifier=vote["activity_id"],
+            defaults={
+                'outcome': vote.get('had_decision_outcome', ''),
+                'number_of_attendees': vote.get('number_of_attendees', 0),
+                'number_of_favor': vote.get('number_of_votes_favor', 0),
+                'number_of_against': vote.get('number_of_votes_against', 0),
+                'number_of_abstention': vote.get('number_of_votes_abstention', 0)
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f'Created vote {vote["activity_id"]}'))
         else:
-            self.stderr.write(self.style.ERROR(f"Failed to fetch meetings data for year {year}"))
-            return None
+            self.stdout.write(self.style.SUCCESS(f'Updated vote {vote["activity_id"]}'))
 
-    def save_meetings_data(self, meetings_data, year):
-        # Extract the relevant fields from the JSON response like id, type, activity_id, had_activity_type
-        meetings = []
-        for meeting in meetings_data['data']:
-            meetings.append({
-                'id': meeting['id'],
-                'type': meeting['type'],
-                'activity_id': meeting['activity_id'],
-                'had_activity_type': meeting['had_activity_type']
-            })
+        return vote_obj
 
-        #Create a Dataframe from  extracted data
-        df = pd.DataFrame(meetings)
+    def create_mep_vote_mappings(self, vote, vote_obj):
+        mappings_to_save = []
 
-        #save the dataframe to a csv file
-        csv_file_path = f"meetings_{year}.csv"
-        df.to_csv(csv_file_path, index=False)
-        self.stdout.write(self.style.SUCCESS(f"Meetings data saved to {csv_file_path}"))
+        for mep_id in vote.get("had_voter_favor", []):
+            mappings_to_save.append(MEPVoteMapping(
+                mep_id=self.get_mep_id(mep_id),
+                vote=vote_obj,
+                vote_type='favor'
+            ))
 
-    def fetch_votes_for_all_meetings(self, meetings_data):
-        all_votes = []
-        for meeting in meetings_data['data']:
-            event_id = meeting['activity_id']
-            votes_data = self.fetch_votes_for_meeting(event_id)
-            if votes_data:
-                for vote in votes_data['data']:
-                    vote['meeting_activity_id'] = event_id  # Add the meeting's activity_id to each vote item
-                    all_votes.append(vote)
-        return all_votes
+        for mep_id in vote.get("had_voter_against", []):
+            mappings_to_save.append(MEPVoteMapping(
+                mep_id=self.get_mep_id(mep_id),
+                vote=vote_obj,
+                vote_type='against'
+            ))
 
-    def fetch_votes_for_meeting(self, event_id):
-        votes_url = f"https://data.europarl.europa.eu/api/v2/meetings/{event_id}/vote-results?format=application%2Fld%2Bjson"
-        response = requests.get(votes_url)
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 204:
-            self.stdout.write(self.style.WARNING(f"No vote results available for meeting {event_id}."))
-            return None
-        else:
-            self.stderr.write(self.style.ERROR(f"Failed to fetch votes data for meeting {event_id}"))
-            return None
+        for mep_id in vote.get("had_voter_abstention", []):
+            mappings_to_save.append(MEPVoteMapping(
+                mep_id=self.get_mep_id(mep_id),
+                vote=vote_obj,
+                vote_type='abstention'
+            ))
+        print("done")
 
-    def save_all_votes_data(self, all_votes_data, year):
-        # Extract the relevant fields from the JSON response
-        votes = []
-        for vote in all_votes_data:
-            votes.append({
-                'id': vote.get('id'),
-                'type': vote.get('type'),
-                'activity_id': vote.get('activity_id'),
-                'activity_start_date': vote.get('activity_start_date'),
-                'decision_method': vote.get('decision_method'),
-                'had_decision_outcome': vote.get('had_decision_outcome'),
-                'had_voter_abstention': vote.get('had_voter_abstention'),
-                'had_voter_against': vote.get('had_voter_against'),
-                'had_voter_favor': vote.get('had_voter_favor'),
-                'meeting_activity_id': vote.get('meeting_activity_id')  # Add the meeting's activity_id to each vote item
-            })
+        MEPVoteMapping.objects.bulk_create(mappings_to_save, ignore_conflicts=True)
+        print("mapping created")
 
-        # Create a DataFrame from the extracted data
-        df = pd.DataFrame(votes)
-
-        # Save the DataFrame to a CSV file
-        csv_file_path = f"votes_{year}.csv"
-        df.to_csv(csv_file_path, index=False)
-        self.stdout.write(self.style.SUCCESS(f"All votes data saved to {csv_file_path}"))
-
+    def get_mep_id(self, mep_identifier):
+        mep, created = MEP.objects.get_or_create(
+            unique_identifier=int(mep_identifier.split("/")[1])
+        )
+        return mep.id  
