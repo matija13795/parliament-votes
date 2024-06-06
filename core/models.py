@@ -1,7 +1,7 @@
 from django.db import models
 
 class MEP(models.Model):
-    unique_identifier = models.IntegerField(primary_key=True)
+    mep_id = models.IntegerField(primary_key=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     gender = models.CharField(max_length=6, null=True)
@@ -9,14 +9,10 @@ class MEP(models.Model):
     date_of_death = models.DateField(null=True)
     hometown = models.CharField(max_length=58, null=True)
     country_of_representation = models.CharField(max_length=3, null=True)
+    combined_name = models.CharField(max_length=100, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-
-# Meeting model to store meeting data
-class Meeting(models.Model):
-    activity_id = models.CharField(max_length=255, unique=True)
-    activity_type = models.CharField(max_length=255)
 
 class Vote(models.Model):
     unique_identifier = models.CharField(max_length=250)
@@ -31,10 +27,18 @@ class Vote(models.Model):
         return self.label
 
 
-class MEPVoteMapping(models.Model):
+class PoliticalGroup(models.Model):
+    group = models.CharField(primary_key=True, max_length=89)
+
+    def __str__(self):
+        return self.group
+
+
+class Membership(models.Model):
     mep = models.ForeignKey(MEP, on_delete=models.CASCADE)
-    vote = models.ForeignKey(Vote, on_delete=models.CASCADE)
-    vote_type = models.CharField(max_length=50)  # 'favor', 'against', 'abstention', 'no_vote'
+    group = models.ForeignKey(PoliticalGroup, on_delete=models.CASCADE)
+    start_date = models.DateField(null=True)
+    end_date   = models.DateField(null=True)
 
     def __str__(self):
         return f"{self.mep} - {self.vote} ({self.vote_type})"
