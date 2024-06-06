@@ -38,7 +38,7 @@ class Command(BaseCommand):
                     else:
                         group = PoliticalGroup.objects.get(group=political_group)
                     
-                    mep = MEP.objects.get(unique_identifier=mep_id)
+                    mep = MEP.objects.get(mep_id=mep_id)
                     membership = Membership(
                         mep=mep,
                         group=group,

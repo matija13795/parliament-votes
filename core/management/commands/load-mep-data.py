@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 gender = item["hasGender"][59:]
 
                 try:
-                    mep = MEP(unique_identifier=unique_id, first_name=first_name, last_name=last_name, gender=gender, date_of_birth=date_of_birth, date_of_death=date_of_death, hometown=hometown, country_of_representation=country_of_representation)
+                    mep = MEP(mep_id=unique_id, first_name=first_name, last_name=last_name, gender=gender, date_of_birth=date_of_birth, date_of_death=date_of_death, hometown=hometown, country_of_representation=country_of_representation)
                     mep.save()
                     
                 except Exception as e:
@@ -55,7 +55,7 @@ class Command(BaseCommand):
         # Open the CSV file for writing
         with open(csv_file_path, 'w', newline='') as csvfile:
             fieldnames = [
-                'unique_identifier', 'first_name', 'last_name', 'gender',
+                'mep_id', 'first_name', 'last_name', 'gender',
                 'date_of_birth', 'date_of_death', 'hometown', 'country_of_representation'
             ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -64,7 +64,7 @@ class Command(BaseCommand):
             # Write the MEP data
             for mep in meps:
                 writer.writerow({
-                    'unique_identifier': mep.unique_identifier,
+                    'mep_id': mep.mep_id,
                     'first_name': mep.first_name,
                     'last_name': mep.last_name,
                     'gender': mep.gender,
