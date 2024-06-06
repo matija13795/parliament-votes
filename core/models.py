@@ -1,13 +1,14 @@
 from django.db import models
 
 class MEP(models.Model):
-    unique_identifier = models.IntegerField(unique=True)
-
+    unique_identifier = models.IntegerField(primary_key=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    date_of_birth = models.DateField(null=True)
     gender = models.CharField(max_length=6, null=True)
-    political_party = models.CharField(max_length=10, null=True)
+    date_of_birth = models.DateField(null=True)
+    date_of_death = models.DateField(null=True)
+    hometown = models.CharField(max_length=58, null=True)
+    country_of_representation = models.CharField(max_length=3, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -19,6 +20,7 @@ class Meeting(models.Model):
 
 class Vote(models.Model):
     unique_identifier = models.CharField(max_length=250)
+    label = models.CharField(max_length=250)
     outcome = models.CharField(max_length=50)
     number_of_attendees = models.IntegerField()
     number_of_favor = models.IntegerField()
@@ -26,7 +28,6 @@ class Vote(models.Model):
     number_of_abstention = models.IntegerField()
 
     def __str__(self):
-        return self.label
         return self.label
 
 
@@ -37,3 +38,20 @@ class MEPVoteMapping(models.Model):
 
     def __str__(self):
         return f"{self.mep} - {self.vote} ({self.vote_type})"
+
+
+class PoliticalGroup(models.Model):
+    group = models.CharField(primary_key=True, max_length=89)
+
+    def __str__(self):
+        return self.group
+
+
+class Membership(models.Model):
+    mep = models.ForeignKey(MEP, on_delete=models.CASCADE)
+    group = models.ForeignKey(PoliticalGroup, on_delete=models.CASCADE)
+    start_date = models.DateField(null=True)
+    end_date   = models.DateField(null=True)
+
+    def __str__(self):
+        return f"{self.mep} was a member of {self.group} from {self.start_date} to {self.end_date}"
