@@ -1,36 +1,42 @@
-import os
-import csv
-import psycopg2
 from django.core.management.base import BaseCommand
-from django.conf import settings
+from core.models import MEP
+import requests
 
 class Command(BaseCommand):
-    help = 'Import CSV data into the database'
+    help = 'Fetch and store MEP data'
 
     def handle(self, *args, **kwargs):
-        # Define the path to the CSV file relative to the BASE_DIR
-        csv_file_path = os.path.join(settings.BASE_DIR, 'mep_data', 'meps.csv')
-        
-        # Establish a connection to the PostgreSQL database using settings
-        conn = psycopg2.connect(
-            dbname=settings.DATABASES['default']['NAME'],
-            user=settings.DATABASES['default']['USER'],
-            password=settings.DATABASES['default']['PASSWORD'],
-            host=settings.DATABASES['default']['HOST'],
-            port=settings.DATABASES['default']['PORT']
-        )
-        cursor = conn.cursor()
+        url = "https://data.europarl.europa.eu/api/v2/meps"
+        params = {
+            "format": "application/ld+json",
+            "offset": 0,
+        }
 
         try:
-            # Execute the \copy command
-            with open(csv_file_path, 'r') as f:
-                next(f)  # Skip the header row
-                cursor.copy_expert("COPY customers (id, gender) FROM STDIN WITH CSV HEADER DELIMITER ','", f)
-            conn.commit()
-            self.stdout.write(self.style.SUCCESS('Successfully imported CSV data'))
+            response = requests.get(url, params=params)
+            response.raise_for_status()  # Check for HTTP request errors
+            json_data = response.json()
+
+            for item in json_data["data"]:
+                unique_id = int(item["id"][7:])  # Extract numeric ID from "person/1234"
+                first_name = item.get("givenName", "")  # Default to empty string if missing
+                last_name = item.get("familyName", "")  # Default to empty string if missing
+                combined_name = f"{first_name} {last_name}".strip()
+
+                mep, created = MEP.objects.update_or_create(
+                    mep_id=unique_id,
+                    defaults={
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'combined_name': combined_name  # Set the combined name
+                    }
+                )
+                if created:
+                    self.stdout.write(self.style.SUCCESS(f'Created MEP {combined_name}'))
+                else:
+                    self.stdout.write(self.style.SUCCESS(f'Updated MEP {combined_name}'))
+
+        except requests.RequestException as e:
+            self.stderr.write(self.style.ERROR(f'HTTP Request failed: {e}'))
         except Exception as e:
-            conn.rollback()
-            self.stderr.write(self.style.ERROR(f'Error importing CSV data: {e}'))
-        finally:
-            cursor.close()
-            conn.close()
+            self.stderr.write(self.style.ERROR(f'An error occurred: {e}'))
