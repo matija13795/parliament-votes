@@ -4,32 +4,33 @@ class MEP(models.Model):
     mep_id = models.IntegerField(primary_key=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    full_name = models.CharField(max_length=100, null=True)
     gender = models.CharField(max_length=6, null=True)
     date_of_birth = models.DateField(null=True)
     date_of_death = models.DateField(null=True)
     hometown = models.CharField(max_length=58, null=True)
     country_of_representation = models.CharField(max_length=3, null=True)
-    combined_name = models.CharField(max_length=100, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
-class Vote_info(models.Model):
-    vote_id = models.CharField(max_length=250)
-    label = models.CharField(max_length=250)
+class VoteInfo(models.Model):
+    vote_id = models.CharField(primary_key=True, max_length=250)
+    code = models.CharField(max_length=20, null=True)
+    interinstitutional_file_no = models.CharField(max_length= 15, null=True)
+    label = models.TextField(default="N/A", null=True)
     date = models.DateField()
-    outcome = models.CharField(max_length=50)
-    number_of_votes = models.IntegerField()
-    number_of_abstentions = models.IntegerField()
-    number_of_yes = models.IntegerField()
-    number_of_no = models.IntegerField()
+    caller = models.CharField(max_length=109, null=True)
+    rapporteur = models.CharField(max_length=255, null=True)
+    committee_responsible = models.CharField(max_length=119, null=True)
+    main_policy_issue = models.CharField(max_length=48, null=True)
 
     def __str__(self):
         return self.label
 
 class VoteMapping(models.Model):
-    vote_id = models.ForeignKey(Vote_info, on_delete=models.CASCADE)
-    mep_id = models.ForeignKey(MEP, on_delete=models.CASCADE)
+    vote = models.ForeignKey(VoteInfo, on_delete=models.CASCADE)
+    mep = models.ForeignKey(MEP, on_delete=models.CASCADE)
     vote_type = models.CharField(max_length=255)
 
     def __str__(self):

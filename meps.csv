@@ -1,4 +1,11 @@
 mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_of_representation
+3,Annemarie,Kuhn,FEMALE,1937-05-09,,Ludwigshafen,DEU
+9,Herbert W.,Köhler,MALE,1919-12-17,,Peiskretscham Kreis Gleiwitz,DEU
+2,José María,Lafuente López,MALE,1921-05-18,,Barcelona,ESP
+1,Georg,Jarzembowski,MALE,1947-02-03,,Braunschweig,DEU
+35,Brigitte,Langenhagen,FEMALE,1939-12-08,,Hamburg,DEU
+7,Heribert,Barrera i Costa,MALE,1917-07-06,,Barcelona,ESP
+8,Agostino,Mantovani,MALE,1937-06-27,,Castellucchio,ITA
 1395,The Lord,O'Hagan,MALE,1945-09-06,,London,GBR
 96834,Iliana,Ivanova,FEMALE,1975-09-14,,Stara Zagora,BGR
 573,Pierre,Billotte,MALE,,,,FRA
@@ -1834,6 +1841,7 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 129164,Tom,Vandenkendelaere,MALE,1984-09-02,,Roeselare,BEL
 781,René,Mart,MALE,1925-11-10,1990-08-02,Esch-sur-Alzette,LUX
 1507,Alberto,TRIDENTE,MALE,1932-06-29,2012-07-24,Venaria Reale (Torino),ITA
+1649,Jean-Pierre,Stirbois,MALE,1945-01-30,1988-11-04,Paris,FRA
 119875,Iñaki,Irazabalbeitia Fernández,MALE,1957-08-01,,Donostia,ESP
 1200,Joaquín,Sisó Cruellas,MALE,1931-06-05,,Fraga (Huesca),ESP
 2224,Klaus-Heiner,Lehne,MALE,1957-10-28,,Düsseldorf,DEU
@@ -1989,7 +1997,6 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 96973,Mário,David,MALE,1953-08-20,,Angola,PRT
 197700,Luisa,Porritt,FEMALE,1987-05-23,,London,GBR
 2147,Per,STENMARCK,MALE,1951-01-29,2013-01-31,Ystad,SWE
-1649,Jean-Pierre,Stirbois,MALE,1945-01-30,1988-11-04,Paris,FRA
 2146,Karin,Starrin,FEMALE,1947-10-28,,Söderhamn,SWE
 95018,Călin Cătălin,Chiriță,MALE,1954-12-18,,Danceu,ROU
 1600,Christiane,Scrivener,FEMALE,1925-09-01,,Mulhouse (Ht. Rhin),FRA
@@ -2690,6 +2697,7 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 125684,Philippe,Loiseau,MALE,1957-11-24,,Chartres,FRA
 111019,Eva,Ortiz Vilella,FEMALE,1975-10-16,,Orihuela,ESP
 977,Vincenzo,Bettiza,MALE,1927-06-07,2017-07-26,Split (Jugoslavia),ITA
+345,Gerhard,Kunz,MALE,1942-02-11,,Komotau,DEU
 1112,Giulio Cesare,Gallenzi,MALE,1931-11-28,2020-10-10,Ariccia (Roma),ITA
 993,Adriana,Ceci,FEMALE,1942-12-09,,Barletta (Bari),ITA
 450,Uwe,Jensen,MALE,1936-04-07,,Dybbøl,DNK
@@ -2768,7 +2776,6 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 2125,Pat the Cope,Gallagher,MALE,1948-03-10,,Dungloe (Co. Donegal),IRL
 197421,Isabel,Wiseler-Lima,FEMALE,1961-12-29,,Odivelas-Loures,LUX
 96994,Fiorello,Provera,MALE,1946-03-31,,Vigevano,ITA
-345,Gerhard,Kunz,MALE,1942-02-11,,Komotau,DEU
 1879,Maria Teresa,Coppo Gavazzi,FEMALE,1937-03-26,,Milano,ITA
 23748,Kazys Jaunutis,Bobelis,MALE,1923-03-04,,Kaunas,LTU
 197771,Vladimír,Bilčík,MALE,1975-05-27,,Bratislava,SVK
@@ -4024,6 +4031,7 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 204414,Margarita,de la Pisa Carrión,FEMALE,1975-09-19,,Madrid,ESP
 202352,Antoni,Comín i Oliveres,MALE,1971-03-07,,Barcelona,ESP
 678,James W.,SPICER,MALE,1925-10-04,2015-03-21,London,GBR
+1408,John,Hume,MALE,1937-01-18,2020-08-03,Derry (Northern Ireland),GBR
 1755,José António,Brito Apolonia,MALE,1941-03-07,,Salva-Beja,PRT
 2191,Alfonso Luigi,Marra,MALE,1947-12-18,,San Giovanni in Fiore,ITA
 1258,Rolf,Linkohr,MALE,1941-04-11,,Stuttgart,DEU
@@ -4258,7 +4266,6 @@ mep_id,first_name,last_name,gender,date_of_birth,date_of_death,hometown,country_
 96803,Zbigniew,Ziobro,MALE,1970-08-18,,Kraków,POL
 1429,Christopher,Beazley,MALE,1952-09-05,,Bexhill (Sussex),GBR
 33981,Atilla Béla Ladislau,Kelemen,MALE,1948-05-04,2022-01-08,Targu Mures,ROU
-1408,John,Hume,MALE,1937-01-18,2020-08-03,Derry (Northern Ireland),GBR
 212,Ralph F.,Howell,MALE,1923-05-25,,Great Moulton,GBR
 1223,Harald,Neubauer,MALE,1951-12-03,2021-12-29,Hamburg,DEU
 30490,Aileen,McLeod,FEMALE,1971-08-24,,BELLSHILL,GBR
