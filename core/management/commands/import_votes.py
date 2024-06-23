@@ -2,9 +2,16 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 from core.models import MEP, VoteInfo, VoteMapping
 from fuzzywuzzy import process, fuzz
+from unidecode import unidecode
 import pandas as pd
 import psycopg2
 import csv
+from django.db.models import Func
+
+
+class Unaccent(Func):
+    function = 'unaccent'
+    template = '%(function)s(%(expressions)s)'
 
 
 PARLIAMENTARY_TERMS = [
@@ -82,19 +89,31 @@ def find_mep(mep_name, term_number):
                 Q(membership__start_date__lt=term_end_date) & 
                 (Q(membership__end_date__gt=term_start_date) | Q(membership__end_date__isnull=True))
                 ).distinct()
-
-            mep_names = [mep.full_name.lower() for mep in meps]            
+            
+            
+            mep_names = [mep.full_name.lower() for mep in meps]          
             db_name, match_ratio = process.extractOne(full_name.lower(), mep_names, scorer=fuzz.token_sort_ratio)
             if match_ratio > 68:
                 mep = meps.filter(full_name__iexact=db_name)
+            
+
+                
 
             if not mep:
                 if first_name == "The Lord":
                     mep = MEP.objects.filter(membership__start_date__lt=PARLIAMENTARY_TERMS[term_number]['end_date'], 
                                              membership__end_date__gt=PARLIAMENTARY_TERMS[term_number]['start_date'], 
-                                             last_name__iexact=last_name).distinct()                        
+                                             last_name__iexact=last_name).distinct()   
+                # elif full_name == "Albert F.L. PÜRTSEN":
+                #     mep = MEP.objects.filter(mep_id=727)               
                 else:
-                    print(full_name)
+                    mep = meps.annotate(
+                        unaccented_name=Unaccent('full_name')
+                    ).filter(unaccented_name__iexact=unidecode(db_name))
+                    if mep.exists():
+                        print(f"Unaccented match found for {full_name} with {db_name}")
+                    else:
+                        print(full_name)
 
     return mep.first()
 
@@ -353,3 +372,4 @@ class Command(BaseCommand):
             writer.writerows(vote_mappings)
 
         self.stdout.write(self.style.SUCCESS('All RCV data imported successfully'))
+

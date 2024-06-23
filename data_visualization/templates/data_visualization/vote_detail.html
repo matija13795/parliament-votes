@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote Detail</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Vote Detail</h1>
+    <p>Vote ID: {{ vote.vote_id }}</p>
+    <p>Label: {{ vote.label }}</p>
+    <p>Date: {{ vote.date }}</p>
+    <p>Outcome: {{ vote.outcome }}</p>
+    <p>Number of Votes: {{ total_votes }}</p>
+    <p>Number of Yes: {{ total_yes }}</p>
+    <p>Number of No: {{ total_no }}</p>
+    <p>Number of Abstentions: {{ total_abstain }}</p>
+
+    <h2>Votes by Political Group</h2>
+
+    {% for group, meps in political_groups.items %}
+        <h3>{{ group }}</h3>
+        <ul>
+            {% for mep in meps %}
+                <li>{{ mep.mep_name }} (ID: {{ mep.mep_id }}): {{ mep.vote_type }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+
+    <canvas id="voteChart" height="400" width="800 "></canvas>
+
+    <script> // separate js code later once the models are finalised and the data is more stable
+        const politicalGroups = {{ political_groups|safe }};
+        const labels = [];
+        const yesVotes = [];
+        const noVotes = [];
+        const abstainVotes = [];
+        let maxYesVotes = 0;
+        let maxNoVotes = 0;
+
+        //count the votes for each political group
+        for (const [group, meps] of Object.entries(politicalGroups)) {
+            let label = group;
+            //if group name too long, convert it into an array of strings
+            if (group.length > 20) { 
+                let new_label = [];
+                let words = group.split(' ');
+                let line = '';
+
+                words.forEach(word => {
+                    if ((line + word).length > 30) {
+                        new_label.push(line.trim());
+                        line = word + ' ';
+                    } else {
+                        line += word + ' ';
+                    }
+                });
+
+                if (line) {
+                    new_label.push(line.trim());
+                }
+
+                label = new_label;
+            }
+            console.log(label);
+
+            labels.push(label);
+            let yesCount = 0;
+            let noCount = 0;
+            let abstainCount = 0;
+
+            meps.forEach(mep => {
+                if (mep.vote_type === 'Yes') {
+                    yesCount++;
+                } else if (mep.vote_type === 'No') {
+                    noCount++;
+                } else if (mep.vote_type === 'Abstain') {
+                    abstainCount++;
+                }
+            });
+
+            yesVotes.push(yesCount);
+            noVotes.push(noCount);
+            abstainVotes.push(abstainCount);
+
+            if (yesCount > maxYesVotes) maxYesVotes = yesCount;
+            if (noCount > maxNoVotes) maxNoVotes = noCount;
+        }
+
+        // render the chart.js chart
+        const ctx = document.getElementById('voteChart').getContext('2d');
+        const voteChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+
+                datasets: [
+                    {
+                        label: 'Abstain',
+                        data: abstainVotes,
+                        backgroundColor: 'rgba(255, 255, 0, 0.6)',
+                        borderColor: 'rgba(255, 255, 0, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0'
+                    },
+                    {
+                        label: 'Yes',
+                        data: yesVotes,
+                        backgroundColor: 'rgba(0, 128, 0, 0.6)',
+                        borderColor: 'rgba(0, 128, 0, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0'
+                    },
+                    {
+                        label: 'No',
+                        data: noVotes.map(vote => -vote),
+                        backgroundColor: 'rgba(255, 0, 0, 0.6)',
+                        borderColor: 'rgba(255, 0, 0, 1)',
+                        borderWidth: 1,
+                        stack: 'Stack 0'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        min: -Math.max(maxNoVotes, maxYesVotes),
+                        max: Math.max(maxNoVotes, maxYesVotes),
+                        title: {
+                            display: true,
+                            text: 'Count'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return Math.abs(value); // display positive values on both sides..might be a better way to do this
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Political Groups',
+                            padding: {top: 20}
+                        }
+                    }      
+                    
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += Math.abs(context.raw); 
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <a href="{% url 'index' %}">Back to Search</a>
+</body>
+</html>
