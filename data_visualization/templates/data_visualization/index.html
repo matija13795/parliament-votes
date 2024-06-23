@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote Info Search</title>
+</head>
+<body>
+    <h1>Search for Vote Info</h1>
+    <form method="GET" action="{% url 'index' %}">
+        <input type="text" name="q" placeholder="Enter Vote ID" value="{{ query }}">
+        <button type="submit">Search</button>
+    </form>
+
+    {% if results %}
+        <h2>Results:</h2>
+        <ul>
+            {% for vote in results %}
+                <li>
+                    <a href="{% url 'vote_detail' vote_id=vote.vote_id %}">
+                        {{ vote.vote_id }}: {{ vote.label }} ({{ vote.date }})
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% elif query %}
+        <p>No results found for "{{ query }}".</p>
+    {% endif %}
+</body>
+</html>
