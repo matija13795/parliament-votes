@@ -191,6 +191,6 @@ def vote_detail(request, vote_id):
         'country_votes': dict(country_votes),
         'chart_groups': uri1,
         'chart_countries': uri2,
-        'country_percentages': country_percentages  # Add this line
+        'country_percentages': country_percentages  
     })
 
