@@ -20,5 +20,6 @@ from django.urls.conf import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('data_visualization/', include('data_visualization.urls')),
+    # home page is the index page of data_visualization app
+    path('', include('data_visualization.urls')),
 ]

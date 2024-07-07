@@ -1,22 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Vote Detail</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        .info {
+            padding: 6px 8px;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
     <h1>Vote Detail</h1>
-    <p>Vote ID: {{ vote.vote_id }}</p>
-    <p>Label: {{ vote.label }}</p>
-    <p>Date: {{ vote.date }}</p>
-    <p>Outcome: {{ vote.outcome }}</p>
+    <p>Vote ID: {{ vote_id }}</p>
+    <p>Label: {{ vote_label }}</p>
+    <p>Date: {{ vote_date }}</p>
     <p>Number of Votes: {{ total_votes }}</p>
     <p>Number of Yes: {{ total_yes }}</p>
     <p>Number of No: {{ total_no }}</p>
     <p>Number of Abstentions: {{ total_abstain }}</p>
 
-    <h2>Votes by Political Group</h2>
-
+    <!-- <h2>Votes by Political Group</h2>
     {% for group, meps in political_groups.items %}
         <h3>{{ group }}</h3>
         <ul>
@@ -24,151 +39,100 @@
                 <li>{{ mep.mep_name }} (ID: {{ mep.mep_id }}): {{ mep.vote_type }}</li>
             {% endfor %}
         </ul>
-    {% endfor %}
+    {% endfor %} -->
 
-    <canvas id="voteChart" height="400" width="800 "></canvas>
+    <h2>Vote Distribution by Political Group</h2>
+    <img src="{{ chart_groups }}" alt="Likert Plot by Political Groups">
 
-    <script> // separate js code later once the models are finalised and the data is more stable
-        const politicalGroups = {{ political_groups|safe }};
-        const labels = [];
-        const yesVotes = [];
-        const noVotes = [];
-        const abstainVotes = [];
-        let maxYesVotes = 0;
-        let maxNoVotes = 0;
+    <!-- <h2>Votes by Country</h2>
+    {% for country, meps in country_votes.items %}
+        <h3>{{ country }}</h3>
+        <ul>
+            {% for mep in meps %}
+                <li>{{ mep.mep_name }} (ID: {{ mep.mep_id }}): {{ mep.vote_type }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %} -->
 
-        //count the votes for each political group
-        for (const [group, meps] of Object.entries(politicalGroups)) {
-            let label = group;
-            //if group name too long, convert it into an array of strings
-            if (group.length > 20) { 
-                let new_label = [];
-                let words = group.split(' ');
-                let line = '';
+    <h2>Vote Distribution by Country</h2>
+    <img src="{{ chart_countries }}" alt="Likert Plot by Countries">
 
-                words.forEach(word => {
-                    if ((line + word).length > 30) {
-                        new_label.push(line.trim());
-                        line = word + ' ';
-                    } else {
-                        line += word + ' ';
-                    }
-                });
-
-                if (line) {
-                    new_label.push(line.trim());
-                }
-
-                label = new_label;
+    <h2>Votes in the Europe Map</h2>
+    <div id="plotly-div"></div>
+    <!-- create a dictionary of country with their respective in favor percentages that can then be passed to javascript -->
+    <script>
+        const countries = [
+            {% for country in country_percentages.keys %}
+                '{{ country }}',
+            {% endfor %}
+        ];
+        console.log(countries);
+    
+        const in_favor_percentages = [
+            {% for in_favor in country_percentages.values %}
+                {{ in_favor }},
+            {% endfor %}
+        ];
+    
+        const trace1 = {
+            geo: 'geo',
+            type: 'choropleth',
+            z: in_favor_percentages,
+            showscale: true,
+            locationmode: 'country names',
+            locations: countries,
+            zmin: 0,
+            zmax: 100,
+            colorscale: [
+                [0, 'rgb(211, 211, 211)'], // light gray
+                [1, 'rgb(0, 0, 139)'] // dark blue
+            ],
+            colorbar: {
+                title: 'In Favor (%)',
+                titleside: 'right',
+                ticksuffix: '%',
+                showticksuffix: 'all',
+                thickness: 20
             }
-            console.log(label);
-
-            labels.push(label);
-            let yesCount = 0;
-            let noCount = 0;
-            let abstainCount = 0;
-
-            meps.forEach(mep => {
-                if (mep.vote_type === 'Yes') {
-                    yesCount++;
-                } else if (mep.vote_type === 'No') {
-                    noCount++;
-                } else if (mep.vote_type === 'Abstain') {
-                    abstainCount++;
-                }
-            });
-
-            yesVotes.push(yesCount);
-            noVotes.push(noCount);
-            abstainVotes.push(abstainCount);
-
-            if (yesCount > maxYesVotes) maxYesVotes = yesCount;
-            if (noCount > maxNoVotes) maxNoVotes = noCount;
-        }
-
-        // render the chart.js chart
-        const ctx = document.getElementById('voteChart').getContext('2d');
-        const voteChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-
-                datasets: [
-                    {
-                        label: 'Abstain',
-                        data: abstainVotes,
-                        backgroundColor: 'rgba(255, 255, 0, 0.6)',
-                        borderColor: 'rgba(255, 255, 0, 1)',
-                        borderWidth: 1,
-                        stack: 'Stack 0'
-                    },
-                    {
-                        label: 'Yes',
-                        data: yesVotes,
-                        backgroundColor: 'rgba(0, 128, 0, 0.6)',
-                        borderColor: 'rgba(0, 128, 0, 1)',
-                        borderWidth: 1,
-                        stack: 'Stack 0'
-                    },
-                    {
-                        label: 'No',
-                        data: noVotes.map(vote => -vote),
-                        backgroundColor: 'rgba(255, 0, 0, 0.6)',
-                        borderColor: 'rgba(255, 0, 0, 1)',
-                        borderWidth: 1,
-                        stack: 'Stack 0'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                indexAxis: 'y',
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        min: -Math.max(maxNoVotes, maxYesVotes),
-                        max: Math.max(maxNoVotes, maxYesVotes),
-                        title: {
-                            display: true,
-                            text: 'Count'
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return Math.abs(value); // display positive values on both sides..might be a better way to do this
-                            }
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Political Groups',
-                            padding: {top: 20}
-                        }
-                    }      
-                    
+        };
+    
+        const data = [trace1];
+        const layout = {
+            width: 800, // Increased width
+            height: 800, // Increased height
+            
+            geo: {
+                scope: 'europe',
+                domain: {
+                    x: [0, 1],
+                    y: [0, 1]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'right'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                label += Math.abs(context.raw); 
-                                return label;
-                            }
-                        }
-                    }
-                }
+                lataxis: {range: [35.0, 70.0]},
+                lonaxis: {range: [-25.0, 45.0]},
+                showland: true,
+                landcolor: 'rgb(229, 229, 229)',
+                showframe: false,
+                projection: {type: 'Mercator'},
+                resolution: 50,
+                countrycolor: 'rgb(255, 255, 255)',
+                coastlinecolor: 'rgb(0, 0, 0)',
+                showcoastlines: true
+            },
+            title: {
+                text: 'Votes in the Europe Map',
+                font: {
+                    size: 24,
+                    color: 'rgb(0, 0, 0)'
+                },
+                xref: 'paper',
+                x: 0.5
             }
-        });
+        };
+    
+        Plotly.newPlot('plotly-div', data, layout);
     </script>
-
-    <a href="{% url 'index' %}">Back to Search</a>
+    
+    
+<a href="{% url 'index' %}">Back to Search</a>
 </body>
 </html>
