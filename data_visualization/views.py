@@ -76,6 +76,7 @@ def vote_detail(request, vote_id):
             start_date__lte=vote.date,
             end_date__gte=vote.date
         )
+        
 
         if mep_memberships.exists():
             mep_membership = mep_memberships.first()
@@ -195,36 +196,3 @@ def vote_detail(request, vote_id):
         'country_percentages': country_percentages  
     })
 
-def geojson_data(request):
-    file_path = os.path.join(settings.BASE_DIR, 'data_visualization', 'static', 'geojson', 'europe.geojson')
-    with open(file_path, 'r') as f:
-        data = json.load(f)
-    
-    vote_id = request.GET.get('vote_id')
-    if vote_id:
-        vote_info = VoteInfo.objects.get(vote_id=vote_id)
-        mep_votes = VoteMapping.objects.filter(vote=vote_info)
-        
-        country_votes = {}
-        for mep_vote in mep_votes:
-            country = mep_vote.mep.country_of_representation
-            if country not in country_votes:
-                country_votes[country] = {'yes': 0, 'no': 0, 'abstain': 0}
-            if mep_vote.vote_type == 'Yes':
-                country_votes[country]['yes'] += 1
-            elif mep_vote.vote_type == 'No':
-                country_votes[country]['no'] += 1
-            elif mep_vote.vote_type == 'Abstain':
-                country_votes[country]['abstain'] += 1
-
-        for feature in data['features']:
-            country_name = feature['properties']['NAME']
-            if country_name in country_votes:
-                total_votes = sum(country_votes[country_name].values())
-                feature['properties']['votes'] = {
-                    'yes': country_votes[country_name]['yes'] / total_votes * 100,
-                    'no': country_votes[country_name]['no'] / total_votes * 100,
-                    'abstain': country_votes[country_name]['abstain'] / total_votes * 100
-                }
-
-    return JsonResponse(data)
