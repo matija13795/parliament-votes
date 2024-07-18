@@ -195,3 +195,4 @@ def vote_detail(request, vote_id):
         'chart_countries': uri2,
         'country_percentages': country_percentages  
     })
+
