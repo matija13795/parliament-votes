@@ -210,6 +210,7 @@ class Command(BaseCommand):
                     'date': 'date',
                     'raporteur': 'rapporteur',
                     'author_name': 'caller',
+                    'committee_code': 'committee_responsible',
                     'main_policy_name': 'main_policy_issue'
                 }
 
@@ -238,6 +239,42 @@ class Command(BaseCommand):
             # Offset vote_id by the appropriate number
             filtered_df['vote_id'] = filtered_df['vote_id'] + vote_no_offsets[term_number]
 
+            if term_number == 6:
+                committee_code_mapping = {
+                    "AFET": "Foreign Affairs",
+                    "DEVE": "Development",
+                    "INTA": "International Trade",
+                    "BUDG": "Budgets",
+                    "CONT": "Budgetary Control",
+                    "ECON": "Economic and Monetary Affairs",
+                    "EMPL": "Employment and Social Affairs",
+                    "ENVI": "Environment, Public Health and Food Safety",
+                    "CLIM": "Temporary Committee on Climate Change",
+                    "ITRE": "Industry, Research and Energy",
+                    "IMCO": "Internal Market and Consumer Protection",
+                    "TRAN": "Transport and Tourism",
+                    "TRANS": "Transport and Tourism",
+                    "REGI": "Regional Development",
+                    "AGRI": "Agriculture and Rural Development",
+                    "PECH": "Fisheries",
+                    "PECHE": "Fisheries",
+                    "CULT": "Culture and Education",
+                    "JURI": "Legal Affairs",
+                    "LIBE": "Civil Liberties, Justice and Home Affairs",
+                    "LIBE ": "Civil Liberties, Justice and Home Affairs",
+                    "AFCO": "Constitutional Affairs",
+                    "AFCO ": "Constitutional Affairs",                    
+                    "FEMM": "Women's Rights and Gender Equality",
+                    "PETI": "Petitions",
+                    "Temporary Committee": "Temporary Committee",
+                    "Conciliation Committee": "Conciliation Committee",
+                    "Conciliation": "Conciliation Committee",
+                    "Parliament's delegation to the Conciliation Committee ": "Parliament's delegation to the Conciliation Committee"
+                }
+                
+                filtered_df['committee_responsible'] = filtered_df['committee_responsible'].apply(lambda x: None if x == 0 or pd.isna(x) else committee_code_mapping[x])
+
+
             if 'code' in filtered_df.columns:
                 filtered_df['code'] = filtered_df['code'].apply(lambda x: None if x == 0 or pd.isna(x) else x)
                 filtered_df['interinstitutional_file_no'] = filtered_df['interinstitutional_file_no'].apply(lambda x: None if x == 0 or pd.isna(x) else x)
@@ -262,7 +299,7 @@ class Command(BaseCommand):
 
         ##################################################################################################
         ##################################################################################################
-        
+
 
         csv_files = ['rcv_ep1.csv', 'rcv_ep2.csv', 'rcv_ep3.csv', 'rcv_ep4.csv', 'rcv_ep5.csv']
         vote_choices = ['', 'Yes', 'No', 'Abstain', 'Present but did not vote']
@@ -335,3 +372,4 @@ class Command(BaseCommand):
             writer.writerows(vote_mappings)
 
         self.stdout.write(self.style.SUCCESS('All RCV data imported successfully'))
+

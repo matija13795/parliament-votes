@@ -10,6 +10,7 @@ class MEP(models.Model):
     date_of_death = models.DateField(null=True)
     hometown = models.CharField(max_length=58, null=True)
     country_of_representation = models.CharField(max_length=3, null=True)
+    photo = models.BinaryField(null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
