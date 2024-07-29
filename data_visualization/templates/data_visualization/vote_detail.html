@@ -8,68 +8,155 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            color: #495057;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 70%;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            font-weight: 600;
+            /* center align text */
+            text-align: center;
+
+        }
+        .header {
+            display: flex;
+            border-bottom: 2px solid #007bff;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        p {
+            margin: 5px 0;
+        }
         .info {
             padding: 6px 8px;
-            background: white;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             border-radius: 5px;
+        }
+        .chart {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            border: 1px solid #007bff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .back-link:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .chart-container {
+            display: flex;
+            justify-content: center;
+        }
+        .details-chart {
+            display: flex;
+            align-items: center; /* Center align items vertically */
+            justify-content: space-between;
+        }
+        .details {
+            flex: 1;
+            margin-right: 20px;
+        }
+        .chart-container-small {
+            width: 300px; /* Adjust the width as needed */
         }
     </style>
 </head>
 <body>
-    <h1>Vote Detail</h1>
-    <p>Vote ID: {{ vote_id }}</p>
-    <p>Label: {{ vote_label }}</p>
-    <p>Date: {{ vote_date }}</p>
-    <p>Number of Votes: {{ total_votes }}</p>
-    <p>Number of Yes: {{ total_yes }}</p>
-    <p>Number of No: {{ total_no }}</p>
-    <p>Number of Abstentions: {{ total_abstain }}</p>
+    <div class="container">
+        <div class="header">
+            <h1>Vote Detail</h1>
+            <p>{{ vote_date }}</p>
+        </div>
+        <div class="details-chart">
+            <div class="details">
+                <p><b>Vote ID:</b> {{ vote_id }}</p>
+                <p><b>Label:</b> {{ vote_label }}</p>
+                <p><b>Number of Votes:</b> {{ total_votes }}</p>
+                <p><b>Number of Yes:</b> {{ total_yes }}</p>
+                <p><b>Number of No:</b> {{ total_no }}</p>
+                <p><b>Number of Abstentions:</b> {{ total_abstain }}</p>
+            </div>
+            <div class="chart-container chart-container-small">
+                <canvas id="overallVoteResult"></canvas>
+            </div>
+        </div>
 
-    <!-- <h2>Votes by Political Group</h2>
-    {% for group, meps in political_groups.items %}
-        <h3>{{ group }}</h3>
-        <ul>
-            {% for mep in meps %}
-                <li>{{ mep.mep_name }} (ID: {{ mep.mep_id }}): {{ mep.vote_type }}</li>
-            {% endfor %}
-        </ul>
-    {% endfor %} -->
+        <h2>Vote Distribution by Political Group</h2>
+        <div class="chart-container">
+            <img class="chart" src="{{ chart_groups }}" alt="Likert Plot by Political Groups">
+        </div>
 
-    <h2>Vote Distribution by Political Group</h2>
-    <img src="{{ chart_groups }}" alt="Likert Plot by Political Groups">
+        <h2>Vote Distribution by Country</h2>
+        <div class="chart-container">
+            <img class="chart" src="{{ chart_countries }}" alt="Likert Plot by Countries">
+        </div>
 
-    <!-- <h2>Votes by Country</h2>
-    {% for country, meps in country_votes.items %}
-        <h3>{{ country }}</h3>
-        <ul>
-            {% for mep in meps %}
-                <li>{{ mep.mep_name }} (ID: {{ mep.mep_id }}): {{ mep.vote_type }}</li>
-            {% endfor %}
-        </ul>
-    {% endfor %} -->
+        
+        <div id="plotly-div"></div>
 
-    <h2>Vote Distribution by Country</h2>
-    <img src="{{ chart_countries }}" alt="Likert Plot by Countries">
-
-    <h2>Votes in the Europe Map</h2>
-    <div id="plotly-div"></div>
+        <a href="{% url 'index' %}" class="back-link">Back to Search</a>
+    </div>
 
     <script>
+        // Overall Vote Result Chart
+        const ctx = document.getElementById('overallVoteResult').getContext('2d');
+        const overallVoteResultChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Yes', 'No', 'Abstain'],
+                datasets: [{
+                    data: [{{ percent_yes }}, {{ percent_no }}, {{ percent_abstain }}],
+                    backgroundColor: ['#508D69', '#EE2233', '#FFC000'],
+                    hoverBackgroundColor: ['#66c084', '#f65456', '#ffd23f']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw.toFixed(2) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Existing Plotly code
         const countries = [
             {% for country in country_percentages.keys %}
                 '{{ country }}',
             {% endfor %}
         ];
-        console.log(countries);
-    
         const in_favor_percentages = [
             {% for in_favor in country_percentages.values %}
                 {{ in_favor }},
             {% endfor %}
         ];
-        console.log(in_favor_percentages);
         const trace1 = {
             geo: 'geo',
             type: 'choropleth',
@@ -80,8 +167,8 @@
             zmin: 0,
             zmax: 100,
             colorscale: [
-                [0, 'rgb(211, 211, 211)'], // light gray
-                [1, 'rgb(0, 0, 139)'] // dark blue
+                [0, 'rgb(230, 236, 255)'], // light blue
+                [1, 'rgb(0, 123, 255)'] // dark blue
             ],
             colorbar: {
                 title: 'In Favor (%)',
@@ -127,8 +214,5 @@
     
         Plotly.newPlot('plotly-div', data, layout);
     </script>
-    
-    
-<a href="{% url 'index' %}">Back to Search</a>
 </body>
 </html>

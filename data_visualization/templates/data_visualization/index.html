@@ -2,97 +2,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <title>Vote Search</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
- <!-- css code add to a separate file later!! -->
-    <style>
-        body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f8fbff;
-    color: #333;
-    text-align: center;
-}
 
-h1 {
-    color: #1a3d7c;
-    font-size: 2.5em;
-    margin-bottom: 20px;
-    margin-top: 50px;
-}
+    <link rel="stylesheet" type="text/css" href="{% static 'data_visualization/css/style.css' %}">
 
-form {
-    display: inline-block;
-    position: relative;
-    width: 50%;
-}
-
-input[type="text"] {
-    width: 100%;
-    padding: 15px;
-    font-size: 1em;
-    border: 1px solid #ccc;
-    border-radius: 25px;
-    box-sizing: border-box;
-}
-
-button {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    cursor: pointer;
-}
-
-button:before {
-    content: '\f002';
-    font-family: FontAwesome;
-    font-size: 1.5em;
-    color: #1a3d7c;
-}
-
-h2 {
-    margin-top: 40px;
-    color: #1a3d7c;
-}
-
-ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-li {
-    background-color: #6c84b1;
-    color: white;
-    padding: 20px;
-    margin: 10px auto;
-    border-radius: 5px;
-    width: 50%;
-    
-}
-
-a {
-    color: white;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-p {
-    font-size: 1.2em;
-}
-    </style>
 </head>
 <body>
     <h1>Search for Vote Info</h1>
     <form method="GET" action="{% url 'index' %}">
-        <input type="text" name="q" placeholder="Enter a date or description" value="{{ query }}">
+        <input type="text" name="q" placeholder="Enter a date or description" value="{{ query }}" id="searchInput">
         <button type="submit"></button>
+
+        <h1>Search by date</h1>
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button type="button" id="prevMonth">←</button>
+                <select id="yearSelect"></select>
+                <select id="monthSelect">
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9">October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                </select>
+                <button type="button" id="nextMonth">→</button>
+            </div>
+            <div id="calendar"></div>
+        </div>
     </form>
+
+    <script>
+        const calendar = document.getElementById('calendar');
+        const yearSelect = document.getElementById('yearSelect');
+        const monthSelect = document.getElementById('monthSelect');
+        const prevMonthButton = document.getElementById('prevMonth');
+        const nextMonthButton = document.getElementById('nextMonth');
+        const searchInput = document.getElementById('searchInput');
+        const now = new Date();
+        let currentMonth = now.getMonth();
+        let currentYear = now.getFullYear();
+
+        const votesByDate = JSON.parse('{{ votes_by_date|escapejs }}');
+
+        function generateCalendar(year, month) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDay = new Date(year, month, 1).getDay();
+            let table = '<table><tr><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th><th>S</th></tr><tr>';
+            for (let i = 0; i < firstDay; i++) {
+                table += '<td></td>';
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const highlightClass = votesByDate[dateStr] ? 'highlight' : '';
+                if ((firstDay + day - 1) % 7 === 0) {
+                    table += '</tr><tr>';
+                }
+                table += `<td class="${highlightClass}" onclick="submitDate('${dateStr}')">${day}</td>`;
+            }
+            table += '</tr></table>';
+            calendar.innerHTML = table;
+        }
+
+        function submitDate(date) {
+            searchInput.value = date;
+            searchInput.form.submit();
+        }
+
+        function populateYearSelect() {
+            const startYear = currentYear - 20;
+            const endYear = currentYear + 10;
+            for (let year = startYear; year <= endYear; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.text = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.add(option);
+            }
+        }
+
+        function updateCalendar() {
+            const selectedYear = parseInt(yearSelect.value);
+            const selectedMonth = parseInt(monthSelect.value);
+            generateCalendar(selectedYear, selectedMonth);
+        }
+
+        prevMonthButton.addEventListener('click', () => {
+            if (currentMonth === 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else {
+                currentMonth--;
+            }
+            yearSelect.value = currentYear;
+            monthSelect.value = currentMonth;
+            updateCalendar();
+        });
+
+        nextMonthButton.addEventListener('click', () => {
+            if (currentMonth === 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else {
+                currentMonth++;
+            }
+            yearSelect.value = currentYear;
+            monthSelect.value = currentMonth;
+            updateCalendar();
+        });
+
+        yearSelect.addEventListener('change', updateCalendar);
+        monthSelect.addEventListener('change', updateCalendar);
+
+        populateYearSelect();
+        monthSelect.value = currentMonth;
+        generateCalendar(currentYear, currentMonth);
+    </script>
 
     {% if results %}
         <h2>Results:</h2>

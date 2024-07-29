@@ -9,9 +9,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import textwrap
 import json
+import datetime
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http import JsonResponse
 from django.conf import settings
-import os
+from django.db.models import Q
 import pycountry
 
 # libraries to install
@@ -27,15 +29,37 @@ def get_country_name(alpha_3_code):
         return None
 
 def index(request):
-    query = request.GET.get('q') #gets the query from the search bar
+    query = request.GET.get('q')  # gets the query from the search bar
     results = None
     if query:
-        # if the query is a date, search for votes on that date or year
-        if query.isdigit():
-            results = VoteInfo.objects.filter(date__year=query)
-        else:
-            results = VoteInfo.objects.filter(label__icontains=query)
-    return render(request, 'data_visualization/index.html', {'results': results, 'query': query})
+        try:
+            # to parse the query as a date
+            query_date = datetime.datetime.strptime(query, '%Y-%m-%d')
+            results = VoteInfo.objects.filter(date=query_date)
+        except ValueError:
+            # if in case query is not a date, search by year or description
+            if query.isdigit():
+                results = VoteInfo.objects.filter(date__year=query)
+            else:
+                results = VoteInfo.objects.filter(label__icontains=query)
+    
+    # get all vote dates and their votes to highlight in the calendar
+    all_votes = VoteInfo.objects.all()
+    votes_by_date = {}
+    for vote in all_votes:
+        date_str = vote.date.strftime('%Y-%m-%d')
+        if date_str not in votes_by_date:
+            votes_by_date[date_str] = []
+        votes_by_date[date_str].append({
+            'vote_id': vote.vote_id,
+            'label': vote.label
+        })
+    
+    return render(request, 'data_visualization/index.html', {
+        'results': results,
+        'query': query,
+        'votes_by_date': json.dumps(votes_by_date, cls=DjangoJSONEncoder)
+    })
 
 def get_country_name(alpha_3_code):
     try:
@@ -46,7 +70,7 @@ def get_country_name(alpha_3_code):
 def vote_detail(request, vote_id):
     vote = get_object_or_404(VoteInfo, vote_id=vote_id)
     vote_mappings = VoteMapping.objects.filter(vote=vote)
-    
+
     political_groups = defaultdict(list)
     country_votes = defaultdict(list)  # Store MEPs and their votes by country
 
@@ -54,7 +78,7 @@ def vote_detail(request, vote_id):
     total_no = 0
     total_abstain = 0
     votes_count = vote_mappings.count()
-    
+
     for mapping in vote_mappings:
         mep = mapping.mep
         mep_name = f"{mep.first_name} {mep.last_name}"
@@ -62,21 +86,23 @@ def vote_detail(request, vote_id):
         # Count votes
         if mapping.vote_type == 'Yes':
             total_yes += 1
-            vote_index = 2
         elif mapping.vote_type == 'No':
             total_no += 1
-            vote_index = 0
         elif mapping.vote_type == 'Abstain':
             total_abstain += 1
-            vote_index = 1
 
         # Find the correct political group for the MEP at the time of the vote
         mep_memberships = Membership.objects.filter(
             mep_id=mep.mep_id,
-            start_date__lte=vote.date,
+            start_date__lte=vote.date
+        ).filter(
             end_date__gte=vote.date
+        ) | Membership.objects.filter(
+            mep_id=mep.mep_id,
+            start_date__lte=vote.date,
+            end_date__isnull=True
         )
-        
+
 
         if mep_memberships.exists():
             mep_membership = mep_memberships.first()
@@ -100,6 +126,14 @@ def vote_detail(request, vote_id):
     vote_id = vote.vote_id
     vote_date = vote.date
     vote_label = vote.label
+
+    # Calculate percentages
+    if votes_count > 0:
+        percent_yes = (total_yes / votes_count) * 100
+        percent_no = (total_no / votes_count) * 100
+        percent_abstain = (total_abstain / votes_count) * 100
+    else:
+        percent_yes = percent_no = percent_abstain = 0
 
     # Create the Likert plot for political groups
     category_names = ['No', 'Abstain', 'Yes']
@@ -127,7 +161,6 @@ def vote_detail(request, vote_id):
     # Calculate the in favor percentages
     country_percentages = {}
     for country, votes in country_votes.items():
-        # if the vote is 'Present but did not vote' dont count it
         total_votes = sum(1 for vote in votes if vote['vote_type'] != 'Present but did not vote')
         yes_votes = sum(1 for vote in votes if vote['vote_type'] == 'Yes')
         in_favor_percentage = (yes_votes / total_votes) * 100 if total_votes > 0 else 0
@@ -189,10 +222,12 @@ def vote_detail(request, vote_id):
         'total_yes': total_yes,
         'total_no': total_no,
         'total_abstain': total_abstain,
+        'percent_yes': percent_yes,
+        'percent_no': percent_no,
+        'percent_abstain': percent_abstain,
         'political_groups': dict(political_groups),
         'country_votes': dict(country_votes),
         'chart_groups': uri1,
         'chart_countries': uri2,
         'country_percentages': country_percentages  
     })
-
