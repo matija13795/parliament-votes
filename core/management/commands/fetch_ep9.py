@@ -8,7 +8,7 @@ from fuzzywuzzy import process, fuzz
 from django.db.models import Q
 from django.db.models import Func
 from django.core.management.base import BaseCommand
-from core.models import MEP, PoliticalGroup
+from core.models import MEP, PoliticalGroup, VoteInfo, VoteMapping
 import csv
 
 multiple_matches = []

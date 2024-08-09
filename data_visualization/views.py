@@ -30,18 +30,26 @@ def get_country_name(alpha_3_code):
 
 def index(request):
     query = request.GET.get('q')  # gets the query from the search bar
-    results = None
+    vote_results = None
+    mep_results = None
+
     if query:
         try:
             # to parse the query as a date
             query_date = datetime.datetime.strptime(query, '%Y-%m-%d')
-            results = VoteInfo.objects.filter(date=query_date)
+            vote_results = VoteInfo.objects.filter(date=query_date)
         except ValueError:
-            # if in case query is not a date, search by year or description
+            # if the query is not a date, search by year or description
             if query.isdigit():
-                results = VoteInfo.objects.filter(date__year=query)
+                vote_results = VoteInfo.objects.filter(date__year=query)
             else:
-                results = VoteInfo.objects.filter(label__icontains=query)
+                # check if the query is in the description OR if it is the name of an MEP
+                vote_results = VoteInfo.objects.filter(label__icontains=query)
+                mep_results = MEP.objects.filter(
+                    Q(full_name__icontains=query) |
+                    Q(last_name__icontains=query) |
+                    Q(first_name__icontains=query)
+                ).distinct()
     
     # get all vote dates and their votes to highlight in the calendar
     all_votes = VoteInfo.objects.all()
@@ -56,9 +64,34 @@ def index(request):
         })
     
     return render(request, 'data_visualization/index.html', {
-        'results': results,
+        'vote_results': vote_results,
+        'mep_results': mep_results,
         'query': query,
         'votes_by_date': json.dumps(votes_by_date, cls=DjangoJSONEncoder)
+    })
+
+def mep_info(request, mep_id):
+    mep = get_object_or_404(MEP, pk=mep_id)
+    photo_data = None
+    if mep.photo:
+        photo_data = base64.b64encode(mep.photo).decode('utf-8')
+        photo_data = f"data:image/png;base64,{photo_data}"
+
+    mep_info = {
+        'mep_id': mep.mep_id,
+        'name': mep.full_name,
+        'country': mep.country_of_representation,
+        'photo': photo_data,
+        'first_name': mep.first_name,
+        'last_name': mep.last_name,
+        'gender': mep.gender,
+        'date_of_birth': mep.date_of_birth,
+        'date_of_death': mep.date_of_death,
+        'hometown': mep.hometown,
+    }
+
+    return render(request, 'data_visualization/mep_info.html', {
+        'mep': mep_info
     })
 
 def get_country_name(alpha_3_code):
@@ -212,6 +245,30 @@ def vote_detail(request, vote_id):
     buf2.seek(0)
     string2 = base64.b64encode(buf2.read())
     uri2 = 'data:image/png;base64,' + string2.decode('utf-8')
+
+    # creating a list of political groups and their votes 
+    group_votes_totaled = []
+    for group, votes in political_groups.items():
+        group_votes_totaled.append({
+            'group': group,
+            'total_yes': sum(1 for vote in votes if vote['vote_type'] == 'Yes'),
+            'total_no': sum(1 for vote in votes if vote['vote_type'] == 'No'),
+            'total_abstain': sum(1 for vote in votes if vote['vote_type'] == 'Abstain')
+        })
+    group_votes_totaled = sorted(group_votes_totaled, key=lambda x: x['total_yes'], reverse=True)
+
+    # creating a list of countries and their votes to pass for plotly chart
+    country_votes_totaled = []
+    for country, votes in country_votes.items():
+        country_votes_totaled.append({
+            'country': get_country_name(country),
+            'total_yes': sum(1 for vote in votes if vote['vote_type'] == 'Yes'),
+            'total_no': sum(1 for vote in votes if vote['vote_type'] == 'No'),
+            'total_abstain': sum(1 for vote in votes if vote['vote_type'] == 'Abstain')
+        })
+    country_votes_totaled = sorted(country_votes_totaled, key=lambda x: x['total_yes'], reverse=True)
+
+
     
     return render(request, 'data_visualization/vote_detail.html', {
         'vote': vote,
@@ -229,5 +286,7 @@ def vote_detail(request, vote_id):
         'country_votes': dict(country_votes),
         'chart_groups': uri1,
         'chart_countries': uri2,
-        'country_percentages': country_percentages  
+        'country_percentages': country_percentages,
+        'group_votes_totaled': group_votes_totaled,
+        'country_votes_totaled': country_votes_totaled
     })

@@ -8,7 +8,8 @@
 
 </head>
 <body>
-    <h1>Search for Vote Info</h1>
+    
+    <h1>Search by Text</h1>
     <form method="GET" action="{% url 'index' %}">
         <input type="text" name="q" placeholder="Enter a date or description" value="{{ query }}" id="searchInput">
         <button type="submit"></button>
@@ -126,20 +127,34 @@
         monthSelect.value = currentMonth;
         generateCalendar(currentYear, currentMonth);
     </script>
-
-    {% if results %}
-        <h2>Results:</h2>
-        <ul>
-            {% for vote in results %}
+    {% if vote_results or mep_results %}
+    <h2>Results:</h2>
+    <ul>
+        {% if vote_results %}
+            <h3>Vote Results:</h3>
+            {% for vote in vote_results %}
                 <li>
                     <a href="{% url 'vote_detail' vote_id=vote.vote_id %}">
                         {{ vote.vote_id }}: {{ vote.label }} ({{ vote.date }})
                     </a>
                 </li>
             {% endfor %}
-        </ul>
+        {% endif %}
+        
+        {% if mep_results %}
+            <h3>MEP Results:</h3>
+            {% for mep in mep_results %}
+                <li>
+                    <a href="{% url 'mep_info' mep.mep_id %}">
+                        {{ mep.full_name }} ({{ mep.country_of_representation }})
+                    </a>
+                </li>
+            {% endfor %}
+        {% endif %}
+    </ul>
     {% elif query %}
-        <p>No results found for "{{ query }}".</p>
+    <p>No results found for "{{ query }}".</p>
     {% endif %}
+
 </body>
 </html>
