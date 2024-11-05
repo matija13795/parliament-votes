@@ -62,8 +62,9 @@ Load MEP data and voting information into the database:
     - COPY core_votemapping(vote_id, mep_id, vote_type) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
 7. Start the server:
   - `python manage.py runserver`
-8. You can now connect on localhost and use the web application
-</details> ```
+8. Access the application:
+  - Open your browser and go to http://localhost:8000 to access the web application.
+</details>
 
 ## Example Screenshots
 //todo
