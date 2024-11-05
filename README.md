@@ -39,7 +39,7 @@ Run the setup script to install dependencies, migrate the database, and load dat
    ```bash
    chmod +x setup.sh
    ```
-2. Run the setup script:
+2. Run the setup script (beware, this might take about 10 minutes to finish):
    ```bash
    ./setup.sh
    ```
