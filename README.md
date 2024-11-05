@@ -45,11 +45,14 @@ Run the setup script to install dependencies, migrate the database, and load dat
    ```bash
    chmod +x setup.sh
    ```
-2. Run the setup script (beware, this might take about 10 minutes to finish):
+2. Convert the script to Unix-style line endings (if you are using Linux/macOS):
+   ```bash
+   sed -i 's/\r$//' setup.sh 
+3. Run the setup script (beware, this might take about 10 minutes to finish):
    ```bash
    ./setup.sh
    ```
-3. **Add Required CSV files:**
+4. **Add Required CSV files:**
    - Place the files vote_info.csv and vote_mappings.csv in your database.
 
 ### Manual Setup (Alternative)
