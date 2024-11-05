@@ -90,7 +90,8 @@ Run the setup script to install dependencies, migrate the database, and load dat
 
 
 ## Example Screenshots
-//todo
+![list create](documentation/vote-by-political-group.png)
+![list](documentation/vote-detail.png)
 
 ## Future Improvements
 //todo
