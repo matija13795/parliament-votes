@@ -22,6 +22,12 @@ Imagine you are a German citizen. You might want to know if your MEPs have been 
 4. Political Group Comparison: Compare voting behavior across different political groups to assess ideological consistency.
 5. User-Friendly Interface: Clean and intuitive visualizations make it easy for anyone to explore the data.
 
+## Example Screenshots
+
+![list create](documentation/vote-detail.png)
+
+![list](documentation/vote-by-political-group.png)
+
 ## Technology Stack
 
 - Backend: Django
@@ -104,9 +110,3 @@ Run the setup script to install dependencies, migrate the database, and load dat
    - Open your browser and go to [http://localhost:8000](http://localhost:8000) to access the web application.
 
 </details>
-
-## Example Screenshots
-
-![list create](documentation/vote-detail.png)
-
-![list](documentation/vote-by-political-group.png)
