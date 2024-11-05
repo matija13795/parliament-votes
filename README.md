@@ -34,6 +34,8 @@ Run the setup script to install dependencies, migrate the database, and load dat
 2. Run the setup script:
    ```bash
    ./setup.sh
+3. **Add Required CSV files:**
+   - Place the files vote_info.csv and vote_mappings.csv in your database.
 
 ### Manual Setup (Alternative)
 <details>
@@ -71,13 +73,17 @@ Run the setup script to install dependencies, migrate the database, and load dat
    - If you’re using PG Admin, you can drag and drop them, or run these commands in your terminal (replace `{PATH_TO_CSV}` with the path to each CSV file on your local machine):
      ```sql
      COPY core_voteinfo(vote_id, code, interinstitutional_file_no, committee_responsible, label, main_policy_issue, date, caller, rapporteur) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
+     ```
+     ```sql
      COPY core_votemapping(vote_id, mep_id, vote_type) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
      ```
 
 7. **Start the server:**
-   - `python manage.py runserver`
+   ```bash
+   python manage.py runserver
+   ```
 
-8. **Access the application:**
+9. **Access the application:**
    - Open your browser and go to [http://localhost:8000](http://localhost:8000) to access the web application.
 
 </details>
