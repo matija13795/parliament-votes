@@ -16,11 +16,11 @@ Imagine you are a German citizen. You might want to know if your MEPs have been 
 
 ## Features
 
-1. Historical Voting Data Visualization: Shows voting patterns by political group and MEP.
+1. Historical Voting Data Visualization: Shows voting patterns by political group.
 2. Country-Specific Insights: Filter and focus on votes cast by MEPs from a particular country.
 3. Time-based Analysis: Track voting trends across different parliamentary terms.
 4. Political Group Comparison: Compare voting behavior across different political groups to assess ideological consistency.
-5. User-Friendly Interface: Clean and intuitive visualizations make it easy for anyone to explore the data.
+5. User-Friendly Interface: Clean and neat visualizations make it easy for anyone to explore the data.
 
 ## Example Screenshots
 
@@ -47,7 +47,7 @@ Run the setup script to install dependencies, migrate the database, and load dat
    ```
 2. Convert the script to Unix-style line endings (if you are using Linux/macOS):
    ```bash
-   sed -i 's/\r$//' setup.sh 
+   sed -i 's/\r$//' setup.sh
 3. Run the setup script (beware, this might take about 10 minutes to finish):
    ```bash
    ./setup.sh
