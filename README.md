@@ -36,35 +36,52 @@ Run the setup script to install dependencies, migrate the database, and load dat
    ./setup.sh
 
 ### Manual Setup (Alternative)
-<details> <summary>Click to expand detailed setup steps</summary>
+<details>
+<summary>Click to expand detailed setup steps</summary>
+
 1. **Clone the repository:**
-  - `git clone https://github.com/matija13795/parliament-votes`
+   - `git clone https://github.com/matija13795/parliament-votes`
+
 2. **Navigate to the project directory:**
-  - `cd parliament-votes`
+   - `cd parliament-votes`
+
 3. **Install dependencies:**
-  - `pip install -r requirements.txt`
-4. Database Initialization:
-  - Create a PostgreSQL database called my_database.
-  - Update the database configuration in django_project/settings.py:
-    - On line 83, set PASSWORD to your PostgreSQL password.
-5. Run migrations and load initial data:
-In the project’s root directory, run the following commands:
-  - `python manage.py makemigrations`
-  - `python manage.py migrate`
-Load MEP data and voting information into the database:
-  - python manage.py import-mep-data
-  - python manage.py import-mep-membership-data
-  - python manage.py import_votes
-6. Add Required CSV Files:
-  - Place the files `vote_info.csv` and `vote_mappings.csv` in your database.
-  - If you’re using PG Admin, you can drag and drop them, or run these commands in your terminal (replace {PATH_TO_CSV} with the path to each CSV file on your local machine):
-    - COPY core_voteinfo(vote_id, code, interinstitutional_file_no, committee_responsible, label, main_policy_issue, date, caller, rapporteur) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
-    - COPY core_votemapping(vote_id, mep_id, vote_type) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
-7. Start the server:
-  - `python manage.py runserver`
-8. Access the application:
-  - Open your browser and go to http://localhost:8000 to access the web application.
+   - `pip install -r requirements.txt`
+
+4. **Database Initialization:**
+   - Create a PostgreSQL database called `my_database`.
+   - Update the database configuration in `django_project/settings.py`:
+     - On line 83, set `PASSWORD` to your PostgreSQL password.
+
+5. **Run migrations and load initial data:**
+   - In the project’s root directory, run the following commands:
+     ```bash
+     python manage.py makemigrations
+     python manage.py migrate
+     ```
+   - Load MEP data and voting information into the database:
+     ```bash
+     python manage.py import-mep-data
+     python manage.py import-mep-membership-data
+     python manage.py import_votes
+     ```
+
+6. **Add Required CSV Files:**
+   - Place the files `vote_info.csv` and `vote_mappings.csv` in your database.
+   - If you’re using PG Admin, you can drag and drop them, or run these commands in your terminal (replace `{PATH_TO_CSV}` with the path to each CSV file on your local machine):
+     ```sql
+     COPY core_voteinfo(vote_id, code, interinstitutional_file_no, committee_responsible, label, main_policy_issue, date, caller, rapporteur) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
+     COPY core_votemapping(vote_id, mep_id, vote_type) FROM '{PATH_TO_CSV}' DELIMITER ',' CSV HEADER;
+     ```
+
+7. **Start the server:**
+   - `python manage.py runserver`
+
+8. **Access the application:**
+   - Open your browser and go to [http://localhost:8000](http://localhost:8000) to access the web application.
+
 </details>
+
 
 ## Example Screenshots
 //todo
