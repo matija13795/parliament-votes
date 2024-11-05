@@ -1,4 +1,5 @@
 #!/bin/bash
+sed -i 's/\r$//' setup.sh
 
 echo "Installing dependencies..."
 pip install -r requirements.txt
